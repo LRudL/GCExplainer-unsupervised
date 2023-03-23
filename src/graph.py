@@ -29,19 +29,22 @@ def adjacency_matrix_to_pyg_graph(A):
 def pyg_to_adjacency_matrix(graph):
     return edge_index_to_adj(graph.edge_index)
 
-def networkx_to_gspan(graph):
+def networkx_to_gspan(graph, multiplicity=1):
     # this format is described here: https://github.com/betterenvi/gSpan/tree/master/graphdata
-    s = "t # 0\n"
-    for i, node in enumerate(graph.nodes(data = True)):
-        node_label = 1 # node[1]["label"]
-        # NB: node_labels are currently not used;
-        #     I think they need to be discrete
-        s += "v {} {}\n".format(i, node_label)
-    for edge in graph.edges(data = True):
-        edge_label = 1 # edge[2]["label"]
-        s += "e {} {} {}\n".format(edge[0], edge[1], edge_label)
-    s += "t # -1\n"
-    # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
+    s = ""
+    for n in range(multiplicity):
+        s += f"t # {n}\n"
+        for i, node in enumerate(graph.nodes(data = True)):
+            node_label = 1 # node[1]["label"]
+            # NB: node_labels are currently not used;
+            #     I think they need to be discrete
+            s += "v {} {}\n".format(i, node_label)
+        for edge in graph.edges(data = True):
+            edge_label = 1 # edge[2]["label"]
+            s += "e {} {} {}\n".format(edge[0], edge[1], edge_label)
+        if n == multiplicity - 1:
+            s += "t # -1\n"
+        # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
     return s
 
 def gspan_to_pyg(str):
@@ -136,8 +139,8 @@ class Graph:
         return pyg_to_adjacency_matrix(self.pyg_data)
     def to_pyg(self):
         return self.pyg_data
-    def to_gspan(self):
-        return networkx_to_gspan(self.to_networkx())
+    def to_gspan(self, multiplicity=1):
+        return networkx_to_gspan(self.to_networkx(), multiplicity=multiplicity)
     
     def draw(self):
         nx.draw(self.to_networkx())

@@ -58,15 +58,18 @@ class GraphConceptFinder:
 
 # gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))
 
-def gspan_on_graph(graph, temp_location="../gspan_out"):
-    gspan_graph_str = graph.to_gspan()
+def gspan_on_graph(graph, support=2, multiplicity=1, temp_location="../gspan_out"):
+    gspan_graph_str = graph.to_gspan(multiplicity=multiplicity)
     # write to file:
     with open(temp_location, "w") as file:
         file.truncate(0)
         file.write(gspan_graph_str)
-    args_str = f'-s 2 -d True -l 3 -u 10 {temp_location}'
+    args_str = f'-s {support} -d False -l 3 -u 6 {temp_location}'
+    print(args_str)
     FLAGS, _ = gspan_parser.parse_known_args(args=args_str.split())
+    print(FLAGS)
     gs = gspan_main(FLAGS)
+    print(f"min sup: {gs._min_support}")
     return gs.graphs
     
 

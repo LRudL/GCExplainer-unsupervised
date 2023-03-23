@@ -1,7 +1,9 @@
 import networkx as nx
 import torch as t
 import torch_geometric as pyg
-import gspan_mining as gspan
+import gspan_mining
+from gspan_mining.config import parser as gspan_parser
+from gspan_mining.main import main as gspan_main
 from graph import Graph, subgraph
 
 # WARNING: UNTESTED CODE
@@ -54,4 +56,17 @@ class GraphConceptFinder:
         return purities
 
 
-gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))
+# gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))
+
+def gspan_on_graph(graph, temp_location="../gspan_out"):
+    gspan_graph_str = graph.to_gspan()
+    # write to file:
+    with open(temp_location, "w") as file:
+        file.truncate(0)
+        file.write(gspan_graph_str)
+    args_str = f'-s 2 -d True -l 3 -u 10 {temp_location}'
+    FLAGS, _ = gspan_parser.parse_known_args(args=args_str.split())
+    gs = gspan_main(FLAGS)
+    return gs.graphs
+    
+

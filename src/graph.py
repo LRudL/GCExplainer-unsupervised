@@ -77,22 +77,59 @@ def graphs_to_gspan(graphs):
         # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
     return s
 
-def gspan_to_pyg(str):
-    rows = str.split("\n")
+def _linebreak_gspan_str(gstr):
+    # gstr looks like 'v 0 1 v 1 1 v 2 1 v 3 1 e 0 1 1 e 1 2 1 e 2 3 1 '
+    # and needs to be 'v 0 1\nv 1 1\nv 2 1[...]'
+    vstr, *estr = gstr.split("e")
+    estr = "e" + "e".join(estr)
+    sv = vstr.split(" ")
+    se = estr.split(" ")
+    s = "\n".join(
+        list(
+            map(lambda vij : " ".join(vij),
+                [sv[i:i+3]
+                 for i in range(0, len(sv) - len(sv) % 3, 3)])
+        ) + list(
+            map(lambda eabc : " ".join(eabc),
+                [se[i:i+4]
+                 for i in range(0, len(se) - len(se) % 4, 4)])))
+    return "t # 0\n" + s + "\nt # -1\n"
+
+def gspan_to_pyg(gstr):
+    if gstr[0] != "t":
+        # then this is the other type of gspan string
+        # see _linebreak_gspan_str,
+        # note that we need to fix this gstr because it is missing the line breaks:
+        gstr = _linebreak_gspan_str(gstr)
+
+    rows = gstr.split("\n")
     rows = rows[1:-1] # throw away the "t # 0" header, and the last "t # -1" footer
     
     edge_index = []
     edge_attr = []
     x = []
+    
+    node_ids = []
 
     for line in rows:
         parts = line.strip().split(' ')
         if parts[0] == 'v':
+            node_ids.append(int(parts[1]))
             x.append([float(parts[2])])
         elif parts[0] == 'e':
             src, tgt, weight = int(parts[1]), int(parts[2]), float(parts[3])
             edge_index.append([src, tgt])
             edge_attr.append([weight])
+
+    # PROBLEM with above: gspan strings don't necessarily have vertices numbered
+    # in ascending order up from zero.
+    # Therefore:
+    # Create a mapping from the original node numbers to PyTorch node numbers
+    # mapping = {n: i for i, n in enumerate(sorted(node_ids))}
+    # # Create the PyTorch Geometric data object
+    # for i in range(len(edge_index)):
+    #     for j in range(len(edge_index[i])):
+    #         edge_index[i][j] = mapping[edge_index[i][j]]
 
     x = t.tensor(x, dtype=t.float)
     edge_index = t.tensor(edge_index, dtype=t.long).t().contiguous()
@@ -115,7 +152,8 @@ def get_gspan_graph_str(gspan_graph):
                 display_str += 'e {} {} {}\n'.format(frm, to, edges[to].elb)
     display_str += 't # -1'
     return display_str
-    
+
+
 
 def subgraph(graph, node_set):
     """Returns the subgraph of graph induced by node_set.
@@ -152,7 +190,6 @@ class Graph:
         elif isinstance(graph_data, str):
             # assume it's a gspan string
             self.format = "gspan"
-            # decode gspan:
             self.pyg_data = gspan_to_pyg(graph_data)
         elif hasattr(graph_data, "set_of_elb"):
             # asuming that no one else will name a graph property "set_of_elb" ...

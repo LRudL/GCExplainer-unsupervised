@@ -1,11 +1,10 @@
-# GCExplainer
+# GCExplainer-unsupervised
 
-This repository contains the code for the paper: "GCExplainer: Human-in-the-Loop Concept-based Explanations for Graph Neural Networks" (https://arxiv.org/pdf/2107.11889.pdf)
+This repository contains the code for a course project based on the paper: "GCExplainer: Human-in-the-Loop Concept-based Explanations for Graph Neural Networks" (https://arxiv.org/pdf/2107.11889.pdf)
 
 ## Citing
 
-If you find this code useful in your research, please consider citing:
-
+The original paper can be cited as:
 ```
 @article{magister2021gcexplainer,
   title={GCExplainer: Human-in-the-Loop Concept-based Explanations for Graph Neural Networks},

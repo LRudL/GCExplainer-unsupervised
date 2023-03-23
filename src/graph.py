@@ -2,11 +2,22 @@ import networkx as nx
 import torch as t
 import torch_geometric as pyg
 import gspan_mining as gspan
+import random
 
 from graph_utils import edge_index_to_adj
 
 def networkx_to_pyg_graph(graph):
-    edge_index = t.tensor(list(graph.edges())).T
+    if not nx.is_directed(graph):
+        graph = graph.to_directed()
+    # edge_index = t.tensor(list(graph.edges())).T
+    
+    # PROBLEM with above: graphs where nodes are not numbered in ascending order up from zero.
+    # Therefore:
+    # Create a mapping from the original node numbers to PyTorch node numbers
+    mapping = {n: i for i, n in enumerate(sorted(graph.nodes()))}
+    # Create the PyTorch Geometric data object
+    edge_index = t.tensor([[mapping[u], mapping[v]] for u, v in graph.edges()]).T
+    
     try:
         return pyg.data.Data(
             x = t.tensor(list(graph.nodes(data = True))),
@@ -18,7 +29,7 @@ def networkx_to_pyg_graph(graph):
         return pyg.data.Data(x, edge_index)
 
 def pyg_to_networkx_graph(graph):
-    return pyg.utils.to_networkx(graph)
+    return pyg.utils.to_networkx(graph).to_undirected()
 
 def adjacency_matrix_to_pyg_graph(A):
     return pyg.data.Data(
@@ -135,10 +146,13 @@ class Graph:
     
     def to_networkx(self):
         return pyg_to_networkx_graph(self.pyg_data)
+    
     def to_adjacency_matrix(self):
         return pyg_to_adjacency_matrix(self.pyg_data)
+    
     def to_pyg(self):
         return self.pyg_data
+    
     def to_gspan(self, multiplicity=1):
         return networkx_to_gspan(self.to_networkx(), multiplicity=multiplicity)
     
@@ -159,7 +173,36 @@ class Graph:
     def num_nodes(self):
         return self.pyg_data.x.shape[0]
     
+    def num_edges(self):
+        return self.pyg_data.edge_index.shape[1]
+    
+    def __repr__(self):
+        return "<Graph object with {} nodes and {} edges>".format(self.num_nodes(), self.num_edges())
+    
     def subgraph(self, node_set):
         return subgraph(self, node_set)
+    
+    def random_subgraph(self, k=6):
+        # k is the number of steps from a starting node to take to form the subgraph
+        nxg = self.to_networkx().to_undirected()
+        node_choice = random.choice(list(nxg.nodes()))
+        print(node_choice)
+        subgraph = nx.ego_graph(
+            nxg, node_choice, k, undirected=False
+        )
+        
+        # NEVERMIND, the below was a consequence of a bug in networkx_to_pyg_graph
+        # for some reason it will include spurious nodes so:
+        # isolated_nodes = list(nx.isolates(subgraph))
+        # print(f"isolated nodes: {isolated_nodes}")
+        # print(f"nodes: {subgraph.nodes()}")
+        # print(f"edges: {subgraph.edges()}")
+        # for node in isolated_nodes:
+        #     print(f"removing node {node}")
+        #     subgraph.remove_node(node)
+        
+        return Graph(subgraph)
+        
+        
         
 

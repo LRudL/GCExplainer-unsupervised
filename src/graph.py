@@ -29,6 +29,61 @@ def adjacency_matrix_to_pyg_graph(A):
 def pyg_to_adjacency_matrix(graph):
     return edge_index_to_adj(graph.edge_index)
 
+def networkx_to_gspan(graph):
+    # this format is described here: https://github.com/betterenvi/gSpan/tree/master/graphdata
+    s = "t # 0\n"
+    for i, node in enumerate(graph.nodes(data = True)):
+        node_label = 1 # node[1]["label"]
+        # NB: node_labels are currently not used;
+        #     I think they need to be discrete
+        s += "v {} {}\n".format(i, node_label)
+    for edge in graph.edges(data = True):
+        edge_label = 1 # edge[2]["label"]
+        s += "e {} {} {}\n".format(edge[0], edge[1], edge_label)
+    s += "t # -1\n"
+    # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
+    return s
+
+def gspan_to_pyg(str):
+    rows = str.split("\n")
+    rows = rows[1:-1] # throw away the "t # 0" header, and the last "t # -1" footer
+    
+    edge_index = []
+    edge_attr = []
+    x = []
+
+    for line in rows:
+        parts = line.strip().split(' ')
+        if parts[0] == 'v':
+            x.append([float(parts[2])])
+        elif parts[0] == 'e':
+            src, tgt, weight = int(parts[1]), int(parts[2]), float(parts[3])
+            edge_index.append([src, tgt])
+            edge_attr.append([weight])
+
+    x = t.tensor(x, dtype=t.float)
+    edge_index = t.tensor(edge_index, dtype=t.long).t().contiguous()
+    edge_attr = t.tensor(edge_attr, dtype=t.float)
+    return pyg.data.Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+
+def get_gspan_graph_str(gspan_graph):
+    # Modification of https://github.com/betterenvi/gSpan/blob/master/gspan_mining/graph.py
+    # to fix the bugs in it ... :)
+    display_str = 't # {}\n'.format(gspan_graph.gid)
+    for vid in gspan_graph.vertices:
+        display_str += 'v {} {}\n'.format(vid, gspan_graph.vertices[vid].vlb)
+    for frm in gspan_graph.vertices:
+        edges = gspan_graph.vertices[frm].edges
+        for to in edges:
+            if gspan_graph.is_undirected:
+                if frm < to:
+                    display_str += 'e {} {} {}\n'.format(frm, to, edges[to].elb)
+            else:
+                display_str += 'e {} {} {}\n'.format(frm, to, edges[to].elb)
+    display_str += 't # -1'
+    return display_str
+    
+
 def subgraph(graph, node_set):
     """Returns the subgraph of graph induced by node_set.
     """
@@ -61,7 +116,15 @@ class Graph:
                 x = t.tensor(graph_data[0]),
                 edge_index = edge_index
             )
-            
+        elif isinstance(graph_data, str):
+            # assume it's a gspan string
+            self.format = "gspan"
+            # decode gspan:
+            self.pyg_data = gspan_to_pyg(graph_data)
+        elif hasattr(graph_data, "set_of_elb"):
+            # asuming that no one else will name a graph property "set_of_elb" ...
+            self.format = "gspan"
+            self.pyg_data = gspan_to_pyg(get_gspan_graph_str(graph_data))
         else:
             raise ValueError("Unknown graph format")
         
@@ -74,19 +137,7 @@ class Graph:
     def to_pyg(self):
         return self.pyg_data
     def to_gspan(self):
-        # this format is described here: https://github.com/betterenvi/gSpan/tree/master/graphdata
-        s = "t # 0\n"
-        for i, node in enumerate(self.to_networkx().nodes(data = True)):
-            node_label = 1 # node[1]["label"]
-            # NB: node_labels are currently not used;
-            #     I think they need to be discrete
-            s += "v {} {}\n".format(i, node_label)
-        for edge in self.to_networkx().edges(data = True):
-            edge_label = 1 # edge[2]["label"]
-            s += "e {} {} {}\n".format(edge[0], edge[1], edge_label)
-        s += "t # -1\n"
-        # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
-        return s
+        return networkx_to_gspan(self.to_networkx())
     
     def draw(self):
         nx.draw(self.to_networkx())

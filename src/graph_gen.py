@@ -31,7 +31,7 @@ def _raw_house():
 
 def house():
     e, l = _raw_house()
-    return Graph(list(l), e)
+    return Graph((list(l), e))
 
 
 def triangle():

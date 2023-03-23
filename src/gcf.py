@@ -50,10 +50,8 @@ class GraphConceptFinder:
     def concept_purities(self):
         purities = []
         for concept in self.concepts:
-            purities.append(concept_purity(self.grpah, concept))
+            purities.append(concept_purity(self.graph, concept))
         return purities
 
 
-gspan_concept_finder = GraphConceptFinder(
-    lambda graph: gspan(graph.to_gspan())
-)
+gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))

@@ -36,9 +36,7 @@ flags.DEFINE_float("learning_rate", 0.01, "Initial learning rate.")
 flags.DEFINE_integer("epochs", 200, "Number of epochs to train.")
 flags.DEFINE_integer("hidden1", 32, "Number of units in hidden layer 1.")
 flags.DEFINE_integer("hidden2", 16, "Number of units in hidden layer 2.")
-flags.DEFINE_float(
-    "weight_decay", 0.0, "Weight for L2 loss on embedding matrix."
-)
+flags.DEFINE_float("weight_decay", 0.0, "Weight for L2 loss on embedding matrix.")
 flags.DEFINE_float("dropout", 0.0, "Dropout rate (1 - keep probability).")
 
 flags.DEFINE_string("model", "gcn_ae", "Model string.")
@@ -108,19 +106,13 @@ print("CREATING MODEL")
 # Create model
 model = None
 if model_str == "gcn_ae":
-    model = GCNModelAE(
-        placeholders, num_features, features_nonzero, FLAGS.num_clusters
-    )
+    model = GCNModelAE(placeholders, num_features, features_nonzero, FLAGS.num_clusters)
 elif model_str == "gcn_vae":
-    model = GCNModelVAE(
-        placeholders, num_features, num_nodes, features_nonzero
-    )
+    model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
 pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
 norm = (
-    adj.shape[0]
-    * adj.shape[0]
-    / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+    adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 )
 
 print("CREATING OPTIMISER")
@@ -209,9 +201,7 @@ for epoch in range(FLAGS.epochs):
 
     t = time.time()
     # Construct feed dictionary
-    feed_dict = construct_feed_dict(
-        adj_norm, adj_label, features, placeholders
-    )
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders["dropout"]: FLAGS.dropout})
     # Run single weight update
     outs = sess.run(
@@ -237,6 +227,8 @@ for epoch in range(FLAGS.epochs):
     avg_accuracy = outs["decoder_acc"]
     cluster_loss = outs["clustering_loss"]
     cluster_counts = outs["nodes_per_cluster"]
+
+    print(f"Centre: {outs['cluster_centres']}")
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
     val_roc_score.append(roc_curr)

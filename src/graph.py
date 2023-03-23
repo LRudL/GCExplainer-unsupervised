@@ -58,6 +58,25 @@ def networkx_to_gspan(graph, multiplicity=1):
         # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
     return s
 
+def graphs_to_gspan(graphs):
+    # see also networkx_to_gspan
+    s = ""
+    for n, graph in enumerate(graphs):
+        graph = graph.to_networkx()
+        s += f"t # {n}\n"
+        for i, node in enumerate(graph.nodes(data = True)):
+            node_label = 1 # node[1]["label"]
+            # NB: node_labels are currently not used;
+            #     I think they need to be discrete
+            s += "v {} {}\n".format(i, node_label)
+        for edge in graph.edges(data = True):
+            edge_label = 1 # edge[2]["label"]
+            s += "e {} {} {}\n".format(edge[0], edge[1], edge_label)
+        if n == len(graphs) - 1:
+            s += "t # -1\n"
+        # ^^ required to avoid a bug according to the gSpan docs ... :) :) :)
+    return s
+
 def gspan_to_pyg(str):
     rows = str.split("\n")
     rows = rows[1:-1] # throw away the "t # 0" header, and the last "t # -1" footer
@@ -154,7 +173,9 @@ class Graph:
         return self.pyg_data
     
     def to_gspan(self, multiplicity=1):
-        return networkx_to_gspan(self.to_networkx(), multiplicity=multiplicity)
+        return networkx_to_gspan(
+            self.to_networkx().to_undirected(), multiplicity=multiplicity
+        )
     
     def draw(self):
         nx.draw(self.to_networkx())
@@ -186,7 +207,7 @@ class Graph:
         # k is the number of steps from a starting node to take to form the subgraph
         nxg = self.to_networkx().to_undirected()
         node_choice = random.choice(list(nxg.nodes()))
-        print(node_choice)
+        # print(node_choice)
         subgraph = nx.ego_graph(
             nxg, node_choice, k, undirected=False
         )

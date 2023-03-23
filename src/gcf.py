@@ -4,7 +4,7 @@ import torch_geometric as pyg
 import gspan_mining
 from gspan_mining.config import parser as gspan_parser
 from gspan_mining.main import main as gspan_main
-from graph import Graph, subgraph
+from graph import Graph, subgraph, graphs_to_gspan
 
 # WARNING: UNTESTED CODE
 
@@ -58,18 +58,26 @@ class GraphConceptFinder:
 
 # gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))
 
-def gspan_on_graph(graph, support=2, multiplicity=1, temp_location="../gspan_out"):
-    gspan_graph_str = graph.to_gspan(multiplicity=multiplicity)
+def gspan_on_graph(graph, n=100, k=5, support=2, temp_location="../gspan_out"):
+    # k is the subgraph size
+    
+    subgraphs = []
+    
+    for _ in range(n):
+        subgraphs.append(graph.random_subgraph(k))
+    
+    gspan_graphs_str = graphs_to_gspan(subgraphs)
+    
     # write to file:
     with open(temp_location, "w") as file:
         file.truncate(0)
-        file.write(gspan_graph_str)
-    args_str = f'-s {support} -d False -l 3 -u 6 {temp_location}'
+        file.write(gspan_graphs_str)
+    args_str = f'-s {support} -d False -l 3 -u 6 -v False {temp_location}'
     print(args_str)
     FLAGS, _ = gspan_parser.parse_known_args(args=args_str.split())
     print(FLAGS)
     gs = gspan_main(FLAGS)
-    print(f"min sup: {gs._min_support}")
-    return gs.graphs
+    # print(f"min sup: {gs._min_support}")
+    return gs
     
 

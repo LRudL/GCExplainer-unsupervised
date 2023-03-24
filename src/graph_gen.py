@@ -99,6 +99,6 @@ def bhshapes(num_nodes, num_houses):
     # nx.draw(ba_graph)
     # plt.show()
     # Identity is possibly a bad choice for feature here... TODO
-    nx.write_adjlist(ba_graph, f"training_runs/testing.adjlist")
-    np.save(f"training_runs/testing.labels", np.array(node_labels))
+    # nx.write_adjlist(ba_graph, f"training_runs/testing.adjlist")
+    # np.save(f"training_runs/testing.labels", np.array(node_labels))
     return ba_graph

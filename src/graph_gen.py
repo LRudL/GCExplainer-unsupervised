@@ -68,7 +68,7 @@ def ring_with_attachments(num_nodes, shape_gen, num_shapes):
     return r
 
 
-def bhshapes(num_nodes, num_houses):
+def bhshapes(num_nodes, num_houses, save_prefix=None):
     # Build the Barabasi-Albert graph:
     random.seed(1234)
     np.random.seed(1234)
@@ -99,6 +99,7 @@ def bhshapes(num_nodes, num_houses):
     # nx.draw(ba_graph)
     # plt.show()
     # Identity is possibly a bad choice for feature here... TODO
-    # nx.write_adjlist(ba_graph, f"training_runs/testing.adjlist")
-    # np.save(f"training_runs/testing.labels", np.array(node_labels))
+    if save_prefix is not None:
+        nx.write_adjlist(ba_graph, f"training_runs/{save_prefix}.adjlist")
+        np.save(f"training_runs/{save_prefix}.labels", np.array(node_labels))
     return ba_graph

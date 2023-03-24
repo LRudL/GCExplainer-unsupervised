@@ -97,6 +97,13 @@ class k_means_gnn(pyg.nn.conv.MessagePassing):
             for graph in graphs:
                 embeds += [self.forward(graph.x, graph.edge_index).numpy()]
         embeds = np.concatenate(embeds)
+        # kmeans_model = cluster.KMeans(n_clusters=k)
+        # kmeans_model = kmeans_model.fit(embeds)
+        # assignments = kmeans_model.predict(embeds)
+        # centres = kmeans_model.cluster_centers_
+        # losses = kmeans_model.transform(embeds)
+        # print(centres)
+
         centres, assignments, inertia = cluster.k_means(embeds, k, n_init="auto")
         self.centres = t.tensor(centres)
         self.k = k
@@ -131,7 +138,7 @@ class KmeansConceptFinder(GraphConceptFinder):
         self.fine_lr = fine_lr
         self.fine_gamma = fine_gamma
 
-    def find_concepts(self, graph, file):
+    def find_concepts(self, graph, file, save_prefix=None):
         self.graph = graph
         graph_data = graph.pyg_data
         in_channels = graph_data.x.shape[1]
@@ -150,7 +157,7 @@ class KmeansConceptFinder(GraphConceptFinder):
             self.initial_epochs,
             lr=self.initial_lr,
             gamma=self.initial_gamma,
-            verbose=True
+            verbose=True,
         )
 
         new_centres, new_assignments = k_means_model.updates_kmeans_centres(
@@ -169,10 +176,41 @@ class KmeansConceptFinder(GraphConceptFinder):
             gamma=self.fine_gamma,
         )
 
+        new_centres, new_assignments = k_means_model.updates_kmeans_centres(
+            [graph_data], self.k
+        )
+
+        print("AFTER UPDATE 2")
+        print(new_centres)
+        print(np.unique(new_assignments, return_counts=True))
+
         with t.no_grad():
             embeds = k_means_model.forward(graph_data.x, graph_data.edge_index)
-            clusters = k_means_model.assign_to_clusters(embeds).detach().numpy()
+            clusters = k_means_model.assign_to_clusters(embeds).detach()
+            distances = k_means_model.cluster_distances(clusters, embeds)
+            if save_prefix is not None:
+                np.save(f"training_runs/{save_prefix}.embeds", embeds.numpy())
+                np.save(f"training_runs/{save_prefix}.clusters", clusters.numpy())
+                np.save(
+                    f"training_runs/{save_prefix}.centres",
+                    k_means_model.centres.numpy(),
+                )
+            clusters = clusters.numpy()
 
-        concepts = [list((clusters == c).nonzero()[0]) for c in np.unique(clusters)]
-        self.concepts = concepts
-        return concepts
+        examples_importance = [
+            [
+                (node_idx, distances[node_idx])
+                for node_idx in (clusters == c).nonzero()[0]
+            ]
+            for c in np.unique(clusters)
+        ]
+        # unsorted_concepts = [
+        #     list((clusters == c).nonzero()[0]) for c in np.unique(clusters)
+        # ]
+        sorted_concepts = [
+            sorted(c, key=lambda e: t.norm(e[1])) for c in examples_importance
+        ]
+        # print(sorted_concepts)
+        self.concepts = [[e[0] for e in c] for c in sorted_concepts]
+
+        return self.concepts

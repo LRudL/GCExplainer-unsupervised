@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # WARNING: UNTESTED CODE
 
 
-def concept_purity(graph, concept, max_num = 50):
+def concept_purity(graph, concept, max_num=50):
     """Returns the graph_edit_distance of all graphs in the concept.
     Recall that each concept is a set of node centres, each defining
     a step-2 subgraph.
@@ -28,8 +28,7 @@ def concept_purity(graph, concept, max_num = 50):
             subgraph_a = graph.subgraph_around_node(node_center_a, steps=2)
             subgraph_b = graph.subgraph_around_node(node_center_b, steps=2)
             ged = nx.graph_edit_distance(
-                subgraph_a.to_networkx(),
-                subgraph_b.to_networkx()
+                subgraph_a.to_networkx(), subgraph_b.to_networkx()
             )
             sum_ged += ged
             pairs += 1
@@ -70,86 +69,88 @@ class GraphConceptFinder:
     def concept_purities(self, max_num=50):
         purities = []
         for concept in self.concepts:
-            purities.append(concept_purity(
-                self.graph,
-                concept,
-                max_num=max_num
-            ))
+            purities.append(concept_purity(self.graph, concept, max_num=max_num))
         return purities
-    
-    def draw_concepts(self, num_examples = 5):
+
+    def draw_concepts(self, num_examples=5, colourmap=None, labelmap=None):
         fig, axs = plt.subplots(len(self.concepts), num_examples, figsize=(20, 20))
-        print("Each row is a concept. Each item in a row is an example of that concept.")
+        print(
+            "Each row is a concept. Each item in a row is an example of that concept."
+        )
         for i, concept in enumerate(self.concepts):
             for j in range(num_examples):
                 if j >= len(concept):
                     axs[i][j].axis("off")
                     break
+                print(concept[j])
                 self.graph.draw_around_node(
-                    concept[j], steps=2, ax=axs[i][j]
+                    concept[j],
+                    steps=2,
+                    ax=axs[i][j],
+                    colourmap=colourmap,
+                    labelmap=labelmap,
                 )
         fig.show()
 
 
 # gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))
 
+
 def gspan_results(
     graph,
-    n=100,      # the number of subgraphs to sample
-    k=5,        # k is the subgraph size
+    n=100,  # the number of subgraphs to sample
+    k=5,  # k is the subgraph size
     support=30,
     min_nodes=4,
     max_nodes=10,
-    temp_location="../gspan_out"
+    temp_location="../gspan_out",
 ):
 
-    
     subgraphs = []
-    
+
     for _ in range(n):
         subgraphs.append(graph.random_subgraph(k))
-    
+
     gspan_graphs_str = graphs_to_gspan(subgraphs)
-    
+
     # write to file:
     with open(temp_location, "w") as file:
         file.truncate(0)
         file.write(gspan_graphs_str)
-        
-    args_str = f'-s {support} -d False -l {min_nodes} -u {max_nodes} {temp_location}'
+
+    args_str = f"-s {support} -d False -l {min_nodes} -u {max_nodes} {temp_location}"
     print(args_str)
     FLAGS, _ = gspan_parser.parse_known_args(args=args_str.split())
-    
+
     # print(FLAGS)
     gs = gspan_main(FLAGS)
     # print(f"min sup: {gs._min_support}")
-    
-    df = gs._report_df.sort_values(by=['support'], ascending=False)
-    
-    diameters = pd.Series([
-        Graph(df.iloc[i]['description']).diameter()
-        for i in range(len(df))
-    ])
-       
+
+    df = gs._report_df.sort_values(by=["support"], ascending=False)
+
+    diameters = pd.Series(
+        [Graph(df.iloc[i]["description"]).diameter() for i in range(len(df))]
+    )
+
     df["score"] = [
         df.iloc[i]["support"] * df.iloc[i]["num_vert"] / diameters.iloc[i]
         for i in range(len(df))
     ]
-    
-    df = df.sort_values(by=['score'], ascending=False)
-    
+
+    df = df.sort_values(by=["score"], ascending=False)
+
     return df
 
 
 def gspan_on_graph(
     graph,
-    concepts=7, # the number of concepts to return
-    n=100,      # the number of subgraphs to sample
-    k=5,        # k is the subgraph size
+    concepts=7,  # the number of concepts to return
+    n=100,  # the number of subgraphs to sample
+    k=5,  # k is the subgraph size
     support=2,
     min_nodes=4,
     max_nodes=10,
-    temp_location="../gspan_out"
+    temp_location="../gspan_out",
 ):
     df = gspan_results(
         graph,
@@ -158,15 +159,13 @@ def gspan_on_graph(
         support=support,
         min_nodes=min_nodes,
         max_nodes=max_nodes,
-        temp_location=temp_location
+        temp_location=temp_location,
     )
-    
+
     concept_graphs = []
     for i in range(concepts):
-        gstr = df.iloc[i]['description']
+        gstr = df.iloc[i]["description"]
         concept = Graph(gstr)
         concept_graphs.append(concept)
-    
-    return concept_graphs, df
-    
 
+    return concept_graphs, df

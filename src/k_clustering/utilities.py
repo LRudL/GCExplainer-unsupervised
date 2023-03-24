@@ -26,9 +26,7 @@ from k_clustering.models import *
 
 def load_syn_data(dataset_str):
     if dataset_str == "BA_Shapes":
-        G = nx.readwrite.read_gpickle(
-            "../../data/BA_Houses/graph_ba_300_80.gpickel"
-        )
+        G = nx.readwrite.read_gpickle("../../data/BA_Houses/graph_ba_300_80.gpickel")
         role_ids = np.load("../../data/BA_Houses/role_ids_ba_300_80.npy")
 
     ## I ADDED THIS
@@ -44,29 +42,21 @@ def load_syn_data(dataset_str):
         role_ids = np.load("../../100_bashapes.labels.npy")
 
     elif dataset_str == "BA_Grid":
-        G = nx.readwrite.read_gpickle(
-            "../../data/BA_Grid/graph_ba_300_80.gpickel"
-        )
+        G = nx.readwrite.read_gpickle("../../data/BA_Grid/graph_ba_300_80.gpickel")
         role_ids = np.load("../../data/BA_Grid/role_ids_ba_300_80.npy")
 
     elif dataset_str == "BA_Community":
         G = nx.readwrite.read_gpickle(
             "../../data/BA_Community/graph_ba_350_100_2comm.gpickel"
         )
-        role_ids = np.load(
-            "../../data/BA_Community/role_ids_ba_350_100_2comm.npy"
-        )
+        role_ids = np.load("../../data/BA_Community/role_ids_ba_350_100_2comm.npy")
 
     elif dataset_str == "Tree_Cycle":
-        G = nx.readwrite.read_gpickle(
-            "../../data/Tree_Cycle/graph_tree_8_60.gpickel"
-        )
+        G = nx.readwrite.read_gpickle("../../data/Tree_Cycle/graph_tree_8_60.gpickel")
         role_ids = np.load("../../data/Tree_Cycle/role_ids_tree_8_60.npy")
 
     elif dataset_str == "Tree_Grid":
-        G = nx.readwrite.read_gpickle(
-            "../../data/Tree_Grid/graph_tree_8_80.gpickel"
-        )
+        G = nx.readwrite.read_gpickle("../../data/Tree_Grid/graph_tree_8_80.gpickel")
         role_ids = np.load("../../data/Tree_Grid/role_ids_tree_8_80.npy")
 
     else:
@@ -160,36 +150,26 @@ def prepare_real_data(graphs, train_split, batch_size, dataset_str):
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
     if dataset_str == "Mutagenicity":
-        full_loader = DataLoader(
-            test_set, batch_size=int(len(test_set)), shuffle=True
-        )
-        small_loader = DataLoader(
-            test_set, batch_size=int(len(test_set) * 0.1)
-        )
+        full_loader = DataLoader(test_set, batch_size=int(len(test_set)), shuffle=True)
+        small_loader = DataLoader(test_set, batch_size=int(len(test_set) * 0.1))
 
     elif dataset_str == "Reddit_Binary":
         full_loader = DataLoader(
             test_set, batch_size=int(len(test_set) * 0.1), shuffle=True
         )
-        small_loader = DataLoader(
-            test_set, batch_size=int(len(test_set) * 0.005)
-        )
+        small_loader = DataLoader(test_set, batch_size=int(len(test_set) * 0.005))
 
     train_zeros = 0
     train_ones = 0
     for data in train_set:
         train_ones += np.sum(data.y.detach().numpy())
-        train_zeros += len(data.y.detach().numpy()) - np.sum(
-            data.y.detach().numpy()
-        )
+        train_zeros += len(data.y.detach().numpy()) - np.sum(data.y.detach().numpy())
 
     test_zeros = 0
     test_ones = 0
     for data in test_set:
         test_ones += np.sum(data.y.detach().numpy())
-        test_zeros += len(data.y.detach().numpy()) - np.sum(
-            data.y.detach().numpy()
-        )
+        test_zeros += len(data.y.detach().numpy()) - np.sum(data.y.detach().numpy())
 
     print()
     print(
@@ -358,9 +338,7 @@ def plot_clusters(
     if k > 20:
         ncol = int(k / 20) + 1
     ax.legend(bbox_to_anchor=(1.05, 1), ncol=ncol)
-    plt.savefig(
-        os.path.join(path, f"{layer_num}layer_{data_type}{reduction_type}.png")
-    )
+    plt.savefig(os.path.join(path, f"{layer_num}layer_{data_type}{reduction_type}.png"))
     plt.show()
 
 
@@ -380,6 +358,7 @@ def plot_samples(
     graph_name=None,
 ):
     res_sorted = get_node_distances(clustering_model, data)
+    print(res_sorted)
 
     if isinstance(num_nodes_view, int):
         num_nodes_view = [num_nodes_view]
@@ -576,9 +555,7 @@ def plot_completeness_table(model_type, calc_type, data, path):
     )
 
     calc_type = calc_type.replace(" ", "")
-    plt.savefig(
-        os.path.join(path, f"{model_type}_{calc_type}_completeness.png")
-    )
+    plt.savefig(os.path.join(path, f"{model_type}_{calc_type}_completeness.png"))
     plt.show()
 
 

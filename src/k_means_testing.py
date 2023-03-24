@@ -6,21 +6,34 @@ import numpy as np
 from sklearn import cluster
 from torch_geometric.datasets.tu_dataset import TUDataset
 from torch_geometric.loader import DataLoader
+import networkx as nx
+import matplotlib.pyplot as plt
 
-# ## BH SHAPES
-# bh_adj_matrix = gg.bhshapes(300, 80)
+## BH SHAPES
+# prefix = "ba_still_working"
+# bh_adj_matrix = gg.bhshapes(300, 80, save_prefix=prefix)
 # bh_Graph = graph.Graph(bh_adj_matrix)
-# concept_finder = KmeansConceptFinder(4)
-# concept_finder.find_concepts(bh_Graph, "testsav")
+# concept_finder = KmeansConceptFinder(4, initial_epochs=500)
+# concept_finder.find_concepts(bh_Graph, "", save_prefix=prefix)
 # print(concept_finder.concepts)
 # exit(1)
 
-## Mutagenicity
+# ## Mutagenicity
+prefix = "mutag"
+
 mutag_dataset = TUDataset("Datasets", "Mutagenicity")
 data_loader = DataLoader(mutag_dataset, batch_size=len(mutag_dataset))
-concept_finder = KmeansConceptFinder(10, initial_gamma=10)
+
+mutag_graph = None
 for g in data_loader:
-    concept_finder.find_concepts(graph.Graph((g.x, g.edge_index)), "testsav")
+    mutag_graph = graph.Graph((g.x, g.edge_index))
+
+mutag_graph_nx = mutag_graph.to_networkx()
+nx.write_adjlist(mutag_graph_nx, f"training_runs/{prefix}.adjlist")
+np.save(f"training_runs/{prefix}.labels", mutag_graph.pyg_data.x.numpy())
+
+concept_finder = KmeansConceptFinder(10, initial_gamma=10)
+concept_finder.find_concepts(mutag_graph, "testsav", save_prefix=prefix)
 print(concept_finder.concepts)
 exit(1)
 

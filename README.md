@@ -1,5 +1,8 @@
 # GCExplainer-unsupervised
 
+NOTE: use previous commit if want to run gspan!!!
+- most recent one breaks it (nx to pyg conversion)
+
 This repository contains the code for a course project based on the paper: "GCExplainer: Human-in-the-Loop Concept-based Explanations for Graph Neural Networks" (https://arxiv.org/pdf/2107.11889.pdf)
 
 ## Citing

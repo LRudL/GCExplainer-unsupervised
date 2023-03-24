@@ -237,6 +237,9 @@ class Graph:
     def __repr__(self):
         return "<Graph object with {} nodes and {} edges>".format(self.num_nodes(), self.num_edges())
     
+    def diameter(self):
+        return nx.diameter(self.to_networkx())
+    
     def subgraph(self, node_set):
         return subgraph(self, node_set)
     

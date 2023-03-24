@@ -5,6 +5,7 @@ import gspan_mining
 from gspan_mining.config import parser as gspan_parser
 from gspan_mining.main import main as gspan_main
 from graph import Graph, subgraph, graphs_to_gspan
+import pandas as pd
 
 # WARNING: UNTESTED CODE
 
@@ -62,7 +63,9 @@ def gspan_results(
     graph,
     n=100,      # the number of subgraphs to sample
     k=5,        # k is the subgraph size
-    support=2,
+    support=30,
+    min_nodes=4,
+    max_nodes=10,
     temp_location="../gspan_out"
 ):
 
@@ -79,8 +82,7 @@ def gspan_results(
         file.truncate(0)
         file.write(gspan_graphs_str)
         
-    # I don't think most of these args have any effect ... (incl. in particular -u for max subgraph size)
-    args_str = f'-s {support} -d False -l 3 -u 6 {temp_location}'
+    args_str = f'-s {support} -d False -l {min_nodes} -u {max_nodes} {temp_location}'
     print(args_str)
     FLAGS, _ = gspan_parser.parse_known_args(args=args_str.split())
     
@@ -89,6 +91,18 @@ def gspan_results(
     # print(f"min sup: {gs._min_support}")
     
     df = gs._report_df.sort_values(by=['support'], ascending=False)
+    
+    diameters = pd.Series([
+        Graph(df.iloc[i]['description']).diameter()
+        for i in range(len(df))
+    ])
+       
+    df["score"] = [
+        df.iloc[i]["support"] * df.iloc[i]["num_vert"] / diameters.iloc[i]
+        for i in range(len(df))
+    ]
+    
+    df = df.sort_values(by=['score'], ascending=False)
     
     return df
 
@@ -99,9 +113,19 @@ def gspan_on_graph(
     n=100,      # the number of subgraphs to sample
     k=5,        # k is the subgraph size
     support=2,
+    min_nodes=4,
+    max_nodes=10,
     temp_location="../gspan_out"
 ):
-    df = gspan_results(graph, n, k, support, temp_location)
+    df = gspan_results(
+        graph,
+        n=n,
+        k=k,
+        support=support,
+        min_nodes=min_nodes,
+        max_nodes=max_nodes,
+        temp_location=temp_location
+    )
     
     concept_graphs = []
     for i in range(concepts):

@@ -11,17 +11,25 @@ import matplotlib.pyplot as plt
 # WARNING: UNTESTED CODE
 
 
-def concept_purity(graph, concept):
+def concept_purity(graph, concept, max_num = 50):
     """Returns the graph_edit_distance of all graphs in the concept.
-    Recall that each concept is a set of nodes. In this case, it is
-    a set of node indices in the graph.
+    Recall that each concept is a set of node centres, each defining
+    a step-2 subgraph.
     """
     pairs = 0
     sum_ged = 0
-    for node_set_a in concept:
-        for node_set_b in concept:
+    num_processed = 0
+    for node_center_a in concept:
+        num_processed += 1
+        if num_processed > max_num:
+            print("WARNING: concept_purity exceeded max_num")
+            break
+        for node_center_b in concept:
+            subgraph_a = graph.subgraph_around_node(node_center_a, steps=2)
+            subgraph_b = graph.subgraph_around_node(node_center_b, steps=2)
             ged = nx.graph_edit_distance(
-                subgraph(graph, node_set_a), subgraph(graph, node_set_b)
+                subgraph_a.to_networkx(),
+                subgraph_b.to_networkx()
             )
             sum_ged += ged
             pairs += 1
@@ -34,10 +42,16 @@ class GraphConceptFinder:
         self.concepts = None  # the last call to find_concepts is stored here
         self.graph = None  # store the last graph passed to find_concepts
         # self.verbose = False
+        self.concept_representation = "centers"
 
     def find_concepts(self, graph):
         concepts = self.graph_to_concepts_fn(graph)
         self.concepts = concepts
+        if isinstance(concepts[0][0], int):
+            self.concept_representation = "centers"
+        else:
+            # assume concepts are already full subgraphs
+            self.concept_representation = "subgraphs"
         self.graph = graph
         # each concept is a set of nodes in the graph
         return concepts
@@ -53,10 +67,14 @@ class GraphConceptFinder:
         self.concepts = concepts
         return concepts
 
-    def concept_purities(self):
+    def concept_purities(self, max_num=50):
         purities = []
         for concept in self.concepts:
-            purities.append(concept_purity(self.graph, concept))
+            purities.append(concept_purity(
+                self.graph,
+                concept,
+                max_num=max_num
+            ))
         return purities
     
     def draw_concepts(self, num_examples = 5):

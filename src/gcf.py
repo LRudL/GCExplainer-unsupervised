@@ -6,6 +6,7 @@ from gspan_mining.config import parser as gspan_parser
 from gspan_mining.main import main as gspan_main
 from graph import Graph, subgraph, graphs_to_gspan
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # WARNING: UNTESTED CODE
 
@@ -32,10 +33,12 @@ class GraphConceptFinder:
         self.graph_to_concepts_fn = graph_to_concepts_fn
         self.concepts = None  # the last call to find_concepts is stored here
         self.graph = None  # store the last graph passed to find_concepts
+        # self.verbose = False
 
     def find_concepts(self, graph):
         concepts = self.graph_to_concepts_fn(graph)
         self.concepts = concepts
+        self.graph = graph
         # each concept is a set of nodes in the graph
         return concepts
 
@@ -55,6 +58,19 @@ class GraphConceptFinder:
         for concept in self.concepts:
             purities.append(concept_purity(self.graph, concept))
         return purities
+    
+    def draw_concepts(self, num_examples = 5):
+        fig, axs = plt.subplots(len(self.concepts), num_examples, figsize=(20, 20))
+        print("Each row is a concept. Each item in a row is an example of that concept.")
+        for i, concept in enumerate(self.concepts):
+            for j in range(num_examples):
+                if j >= len(concept):
+                    axs[i][j].axis("off")
+                    break
+                self.graph.draw_around_node(
+                    concept[j], steps=2, ax=axs[i][j]
+                )
+        fig.show()
 
 
 # gspan_concept_finder = GraphConceptFinder(lambda graph: gspan(graph.to_gspan()))

@@ -117,6 +117,7 @@ class KmeansConceptFinder(GraphConceptFinder):
         fine_lr=0.001,
         fine_gamma=0.001,
     ):
+        # super().__init__()
         self.k = k
         self.hidden_channels = hidden_channels
         self.out_channels = out_channels
@@ -149,6 +150,7 @@ class KmeansConceptFinder(GraphConceptFinder):
             self.initial_epochs,
             lr=self.initial_lr,
             gamma=self.initial_gamma,
+            verbose=True
         )
 
         new_centres, new_assignments = k_means_model.updates_kmeans_centres(

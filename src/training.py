@@ -22,7 +22,7 @@ def train_edge_predictor(
     return losses
 
 
-def train_k_means_gnn(model, graphs, epochs, lr=0.01, gamma=0.001):
+def train_k_means_gnn(model, graphs, epochs, lr=0.01, gamma=0.001, verbose=True):
     model.train()
     losses = []
     opt = t.optim.Adam(model.parameters(), lr=lr)
@@ -52,8 +52,9 @@ def train_k_means_gnn(model, graphs, epochs, lr=0.01, gamma=0.001):
             # Update centres
             model.perform_centres_update(mask, update)
 
-            print(
-                f"Epoch {epoch}: loss = {loss}, cluster_counts={model.cluster_counts}"
-            )
+            if verbose:
+                print(
+                    f"Epoch {epoch}: loss = {loss}, cluster_counts={model.cluster_counts}"
+                )
 
     return losses

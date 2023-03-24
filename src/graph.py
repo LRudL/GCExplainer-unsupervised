@@ -3,6 +3,7 @@ import torch as t
 import torch_geometric as pyg
 import gspan_mining as gspan
 import random
+from utils import vector_hash_color
 
 from graph_utils import edge_index_to_adj
 
@@ -215,7 +216,12 @@ class Graph:
         )
     
     def draw(self):
-        nx.draw(self.to_networkx())
+        # use draw_around_node to draw a neighbourhood
+        nx.draw(
+            self.to_networkx(),
+            node_size=50,
+            labels = {i: i for i in range(self.num_nodes())}
+        )
     
     def add_edge(self, node_a, node_b):
         self.pyg_data.edge_index = t.cat(
@@ -243,13 +249,38 @@ class Graph:
     def subgraph(self, node_set):
         return subgraph(self, node_set)
     
+    def subgraph_around_node(self, node, steps=2, nx_return=False):
+        nxg = self.to_networkx()
+        subgraph = nx.ego_graph(nxg, node, steps, undirected=False)
+        if nx_return:
+            return subgraph
+        return Graph(subgraph)
+    
+    def draw_around_node(self, node, steps=2, ax=None):
+        nxsg = self.subgraph_around_node(node, steps=steps, nx_return=True)
+        colors = [
+            vector_hash_color(self.pyg_data.x[node_i])
+            for node_i in nxsg.nodes
+        ]
+        nx.draw(
+            nxsg,
+            node_size=100,
+            labels = {
+                i: i if i != node else f"[{i}]"
+                for i in nxsg.nodes
+            },
+            node_color=colors,
+            ax=ax,
+            alpha=0.75
+        )
+    
     def random_subgraph(self, k=6):
         # k is the number of steps from a starting node to take to form the subgraph
         nxg = self.to_networkx().to_undirected()
         node_choice = random.choice(list(nxg.nodes()))
         # print(node_choice)
         subgraph = nx.ego_graph(
-            nxg, node_choice, k, undirected=False
+            nxg, node_choice, k, undirected=True
         )
         
         # NEVERMIND, the below was a consequence of a bug in networkx_to_pyg_graph
